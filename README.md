@@ -69,8 +69,7 @@ The server will log its activity to a file named `mcp_server.log` in the project
 ## Connecting to Gemini CLI on Windows
 
 You can connect this MCP server to the Google Gemini CLI to use the function as a native tool directly from your
-terminal. `get_youtube_transcript`
-These instructions are for a **Windows** environment.
+terminal. These instructions are for a **Windows** environment.
 
 ### Step 1: Create a Startup Script `run_server.bat`
 
@@ -146,10 +145,61 @@ Now, you need to tell the Gemini CLI how to find and run your new server.
 
 ### Step 3: Verify the Connection
 
-After saving the `config.json` file, you can verify that Gemini CLI recognises and can use your new tool.
+After saving the `config.json` file, you can verify that Gemini CLI recognizes and can use your new tool.
 
-Gemini will now execute your `run_server.bat` script in the background, which starts the MCP server. It will then send
-the request to the server, get the transcript, and display it as the answer to your prompt.
+Run Gemini CLI and press ctrl+t
+
+You should see `TubeScribe` listed as an available tool.
+
+## Connecting to Gemini CLI on Mac/Unix
+
+You can also connect this MCP server to the Google Gemini CLI on Mac or other Unix-like systems. The process is similar to Windows but uses a shell script instead of a batch file.
+
+### Step 1: Prepare the Startup Script
+
+The repository already includes a `run_server.sh` script. Just make it executable:
+
+```bash
+chmod +x run_server.sh
+```
+
+### Step 2: Configure the Gemini CLI
+
+1. Locate your Gemini CLI `config.json` file. On Mac/Unix systems, this is typically found at:
+   `~/.gemini/config.json`
+
+2. Open the `config.json` file in a text editor. Add the following entry to the `mcpServers` object. If `mcpServers`
+   doesn't exist, create it as shown below:
+
+```json
+{
+  "mcpServers": {
+    "TubeScribe": {
+      "command": "/path/to/your/project/run_server.sh",
+      "cwd": "/path/to/your/project"
+    }
+  }
+}
+```
+
+3. **Replace both instances of `/path/to/your/project`** with the absolute path to where you cloned the repository.
+
+**Example:** If your project is located at `/Users/username/TubeScribe`, the entry would look like this:
+
+```json
+{
+  "mcpServers": {
+    "TubeScribe": {
+      "command": "/Users/username/TubeScribe/run_server.sh",
+      "cwd": "/Users/username/TubeScribe"
+    }
+  }
+}
+```
+
+### Step 3: Verify the Connection
+
+After saving the `config.json` file, you can verify that Gemini CLI recognizes and can use your new tool.
 
 Run Gemini CLI and press ctrl+t
 
