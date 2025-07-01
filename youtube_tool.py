@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 import json
+import multiprocessing
 import whisper
 import yt_dlp
 from yt_dlp.utils import DownloadError
@@ -15,11 +16,13 @@ _whisper_model = None
 def _check_whisper_cpp():
     """Check if whisper.cpp is available in the system PATH."""
     try:
-        result = subprocess.run(['whisper-cpp', '--version'], 
+        result = subprocess.run(['whisper-cli', '--help'], 
                               capture_output=True, 
                               text=True)
+        logger.info("whisper.cpp check result: %s", result.returncode == 0)
         return result.returncode == 0
     except FileNotFoundError:
+        logger.info("whisper.cpp not found in PATH")
         return False
 
 def _transcribe_with_whisper_cpp(audio_path):
@@ -29,17 +32,70 @@ def _transcribe_with_whisper_cpp(audio_path):
     """
     try:
         logger.info("Attempting transcription with whisper.cpp...")
-        result = subprocess.run(
-            ['whisper-cpp', audio_path, '--output-json'],
+        model_path = os.path.join(os.path.dirname(__file__), "models", "ggml-tiny.bin")
+        if not os.path.exists(model_path):
+            logger.error(f"Model file not found at {model_path}")
+            return None
+            
+        # Convert MP3 to WAV
+        wav_path = audio_path.replace('.mp3', '.wav')
+        logger.info(f"Converting {audio_path} to WAV format...")
+        convert_result = subprocess.run(
+            ['ffmpeg', '-y', '-i', audio_path, wav_path],
             capture_output=True,
             text=True
         )
+        if convert_result.returncode != 0:
+            logger.error(f"Failed to convert audio to WAV: {convert_result.stderr}")
+            return None
+
+        # Run whisper.cpp on the WAV file
+        json_output_path = wav_path + '.json'
+
+        # Determine thread count
+        thread_env = os.getenv("WHISPER_THREADS")
+        try:
+            threads = int(thread_env) if thread_env else multiprocessing.cpu_count()
+        except ValueError:
+            threads = multiprocessing.cpu_count()
+
+        cmd = [
+            'whisper-cli',
+            '-m', model_path,
+            '-t', str(threads),  # multi-threading
+            '--output-json-full',
+            '--no-timestamps',
+            wav_path
+        ]
+        logger.info(f"Running whisper.cpp command: {' '.join(cmd)}")
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        logger.info(f"whisper.cpp return code: {result.returncode}")
+        logger.info(f"whisper.cpp stderr: {result.stderr}")
+
+        # Clean up the WAV file
+        try:
+            os.remove(wav_path)
+        except Exception as e:
+            logger.warning(f"Failed to remove temporary WAV file: {e}")
+
         if result.returncode == 0:
             try:
-                output = json.loads(result.stdout)
-                return output.get('text', '')
-            except json.JSONDecodeError:
-                logger.error("Failed to parse whisper.cpp JSON output")
+                # Read the JSON output from the file
+                with open(json_output_path, 'r') as f:
+                    output = json.load(f)
+                
+                # Clean up the JSON file
+                try:
+                    os.remove(json_output_path)
+                except Exception as e:
+                    logger.warning(f"Failed to remove JSON output file: {e}")
+
+                # Extract text from the full JSON output
+                segments = output.get('transcription', [])
+                text = ' '.join(seg.get('text', '') for seg in segments)
+                return text.strip()
+            except (json.JSONDecodeError, FileNotFoundError) as e:
+                logger.error(f"Failed to read whisper.cpp JSON output: {e}")
                 return None
         else:
             logger.error(f"whisper.cpp failed with error: {result.stderr}")
