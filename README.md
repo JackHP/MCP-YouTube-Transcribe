@@ -16,8 +16,8 @@ communicating with an MCP server.
 * **YouTube Video Search:** Finds the most relevant YouTube video based on a text query.
 * **Official Transcript Priority:** Intelligently fetches manually created or auto-generated YouTube transcripts first
   for speed and accuracy.
-* **AI-Powered Fallback:** If no official transcript exists, it automatically falls back to using OpenAI's Whisper
-  `tiny` model to generate a high-quality transcript from the video's audio.
+* **Fast AI-Powered Transcription:** Uses whisper.cpp (if available) for blazing fast transcription. Falls back to OpenAI's Python Whisper
+  `tiny` model if whisper.cpp is not installed.
 * **MCP Server Interface:** Exposes the transcription functionality as a simple tool (`get_youtube_transcript`) via the
   lightweight model context protocol.
 
@@ -26,8 +26,13 @@ communicating with an MCP server.
 * Python 3.12+
 * **[uv](https://github.com/astral-sh/uv):** A fast Python package installer and resolver. You will need to [install
   `uv`](https://github.com/astral-sh/uv#installation) on your system first.
-* **[FFmpeg](https://ffmpeg.org/download.html):** Must be installed and available in your system's PATH. OpenAI Whisper
-  requires it to process audio files.
+* **[FFmpeg](https://ffmpeg.org/download.html):** Must be installed and available in your system's PATH. Required for audio processing.
+* **[whisper.cpp](https://github.com/ggerganov/whisper.cpp)** *(Optional but recommended)*: A fast C++ implementation of OpenAI's Whisper model.
+  - On Mac: `brew install whisper-cpp`
+  - On Linux: Build from source following the [whisper.cpp installation instructions](https://github.com/ggerganov/whisper.cpp#build)
+  - On Windows: Build from source or use pre-built binaries from the [releases page](https://github.com/ggerganov/whisper.cpp/releases)
+  
+  After installation, ensure the `whisper-cpp` command is available in your system's PATH.
 
 ## Installation with `uv`
 
