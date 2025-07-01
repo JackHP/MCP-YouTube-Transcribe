@@ -16,8 +16,8 @@ communicating with an MCP server.
 * **YouTube Video Search:** Finds the most relevant YouTube video based on a text query.
 * **Official Transcript Priority:** Intelligently fetches manually created or auto-generated YouTube transcripts first
   for speed and accuracy.
-* **AI-Powered Fallback:** If no official transcript exists, it automatically falls back to using OpenAI's Whisper
-  `tiny` model to generate a high-quality transcript from the video's audio.
+* **Fast AI-Powered Transcription:** Uses whisper.cpp (if available) for blazing fast transcription. Falls back to OpenAI's Python Whisper
+  `tiny` model if whisper.cpp is not installed.
 * **MCP Server Interface:** Exposes the transcription functionality as a simple tool (`get_youtube_transcript`) via the
   lightweight model context protocol.
 
@@ -26,8 +26,23 @@ communicating with an MCP server.
 * Python 3.12+
 * **[uv](https://github.com/astral-sh/uv):** A fast Python package installer and resolver. You will need to [install
   `uv`](https://github.com/astral-sh/uv#installation) on your system first.
-* **[FFmpeg](https://ffmpeg.org/download.html):** Must be installed and available in your system's PATH. OpenAI Whisper
-  requires it to process audio files.
+* **[FFmpeg](https://ffmpeg.org/download.html):** Must be installed and available in your system's PATH. Required for audio processing.
+* **[whisper.cpp](https://github.com/ggerganov/whisper.cpp)** *(Highly recommended)*: TubeScribe will **first** try to use whisper.cpp for lightning-fast local transcription and only fall back to Python Whisper if the executable is not found.
+  - macOS: `brew install whisper-cpp`
+  - Linux: Build from source following the [whisper.cpp installation guide](https://github.com/ggerganov/whisper.cpp#build)
+  - Windows: Build from source or grab a pre-built binary from the [releases page](https://github.com/ggerganov/whisper.cpp/releases)
+
+  After installation, make sure the `whisper-cli` (or `whisper-cpp` on older versions) command is in your PATH.
+
+  Finally, download a Whisper model. The **tiny** model offers the best speed-to-quality ratio for most use-cases:
+
+  ```bash
+  mkdir -p models
+  curl -L -o models/ggml-tiny.bin \
+       https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+  ```
+
+  Place additional models in the same `models/` folder if you wish to experiment.
 
 ## Installation with `uv`
 
